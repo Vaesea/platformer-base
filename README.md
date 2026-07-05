@@ -1,5 +1,3 @@
-This has not started development yet.
-
 # Vaesea's Platformer Base
 A base for basic platformers made using HaxeFlixel. Will have a 
 branch for SuperTux fangames.
