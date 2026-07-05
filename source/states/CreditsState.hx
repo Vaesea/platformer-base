@@ -26,9 +26,8 @@ class CreditsState extends FlxState
 
         AnatolyStev - Coding
 
-        Discover Haxeflixel - Book / PDF
-        used to make the original code that
-        became this
+        Discover Haxeflixel - Book / PDF - Original
+        Code
 
         CNE-Flixel - HaxeFlixel fork that had
         the original version of the
