@@ -11,7 +11,6 @@ class IntroSubState extends FlxSubState
     // FlxTexts
     var readyText:FlxText;
     var titleText:FlxText;
-    var creatorText:FlxText;
 
     // How much time the player should be getting ready to play the level.
     var waitTime = 2;
@@ -40,7 +39,6 @@ class IntroSubState extends FlxSubState
         readyText.borderSize = 1.25;
 
         add(titleText);
-        add(creatorText);
         add(readyText);
 
         new FlxTimer().start(waitTime, function(_)

@@ -4,6 +4,7 @@ import characters.player.Player;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.FlxState;
+import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.group.FlxGroup;
 import flixel.math.FlxPoint;
 import flixel.tile.FlxTilemap;
@@ -31,12 +32,6 @@ class PlayState extends FlxState
 	   to add enemies! :3 */
 	var entities:FlxGroup;
 
-	/* If you're planning on adding Bricks / Bonus Blocks,
-	   you can add them to solidThings. It saves you from
-	   having a headache when you start to add smart 
-	   enemies! :3 */
-	public var solidThings:FlxGroup;
-
 	// TODO: Allow for more checkpoints
 	public var checkpoint:FlxPoint;
 
@@ -47,7 +42,6 @@ class PlayState extends FlxState
 
 		// Add things part 2
 		entities = new FlxGroup();
-		solidThings = new FlxGroup();
 		player = new Player();
 		items = new FlxTypedGroup<FlxSprite>();
 
@@ -59,7 +53,6 @@ class PlayState extends FlxState
 
 		// Add things part 3
 		entities.add(items);
-		add(solidThings);
 		add(entities);
 		add(player);
 
@@ -77,7 +70,7 @@ class PlayState extends FlxState
 
 		// Tux collision
 		FlxG.overlap(entities, player, collideEntities);
-		FlxG.collide(solidThings, player);
+		FlxG.collide(map, player);
 
 		super.update(elapsed);
 	}

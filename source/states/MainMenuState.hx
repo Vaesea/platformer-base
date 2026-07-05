@@ -18,7 +18,8 @@ class MainMenuState extends FlxState
             FlxG.sound.music.stop();
         }
 
-        Global.currentLevel = 0; // TODO: Is this needed?
+        Global.checkpointReached = false;
+        Global.currentLevel = 0;
         Global.coins = 0;
 
         // Adding Title Screen background
@@ -34,7 +35,6 @@ class MainMenuState extends FlxState
 
     function clickPlay()
     {
-        remove(playButton, true); // Remove button, may not be needed?
-        FlxG.switchState(PlayState.new); // Switch State
+        FlxG.switchState(CreditsState.new); // Switch State
     }
 }
