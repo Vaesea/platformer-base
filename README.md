@@ -61,11 +61,11 @@ possible in the future when I add mobile controls.
 ### Art (Main Branch)
 - Vaesea
 ### Art (STM1 Branch)
-- SuperTux Team (The art was made for SuperTux Milestone 1)
+- SuperTux Team (The art that was made for SuperTux Milestone 1)
 ### Music (Main Branch)
 - Vaesea (The drum samples were taken from a Sonic 4 Episode II soundfont, those drum samples were taken from Sonic The Hedgehog 1 and 2. Because of this, I'm not sure that the song can be CC-BY-SA 4.0. although I do allow everyone to use the song, you'll probably need to credit SEGA or Sonic Team)
 ### Music (STM1 Branch)
-- Wansti (The SuperTux Theme used was made for SuperTux Milestone 1)
+- Wansti (The SuperTux Theme that was made for SuperTux Milestone 1)
 - Mystical (Salcon)
 - Mortimer Twang (Chipdisko)
 ## Special Thanks
