@@ -8,7 +8,7 @@ and copying the source code of my very old fangame version of my
 SuperTux mod, PepperTux, specifically the HaxeFlixel version.
 
 This will hopefully be a good base for any platformer game, which 
-is why it will have a few branches.
+is why it will have two branches.
 
 ## Branches
 Both branches will likely be unstable. For stable code, please go 
@@ -16,7 +16,7 @@ to the releases.
 
 ### Main
 This is where the base of this base will be made, just including a
-few things like coins, bonus blocks and obviously, the player.
+few things like coins and obviously, the player.
 
 ### STM1 (Doesn't Exist Yet)
 STM1 = SuperTux Milestone 1
@@ -50,6 +50,23 @@ however, for Mac, I recommend asking someone to test the game for you.
 
 You can't compile this base for iOS / Android yet. This will likely be
 possible in the future when I add mobile controls.
+
+## Future Additions, Improvements And Fixes
+### Beta 2
+- [ ] Credits Menu
+- [ ] Replacement of Solid Object Layer with FlxTilemap's Tile Properties
+- [ ] Checkpoints
+- [ ] The warning that appears when entering the level
+
+### Full Release
+- [ ] Ducking / Crouching
+- [ ] Skidding
+
+### Unconfirmed
+- Options Menu (Really, I think this would be bloat for a simple platformer base like this. Anyone using this would just add their own options menu anyways...)
+- Using Echo Flixel (It's quite slow when you have too many dynamic bodies on screen at once)
+- Using FlxTilemapExt for state.map (Anyone using this would probably just do this themselves
+- HUD (Anyone using this would just add their own HUD anyways so this likely won't be added since it's just bloat for something simple like this...)
 
 ## What's The License?
 It's the GNU General Public License 3.0. Check the LICENSE file for
