@@ -51,9 +51,31 @@ however, for Mac, I recommend asking someone to test the game for you.
 You can't compile this base for iOS / Android yet. This will likely be
 possible in the future when I add mobile controls.
 
+## Credits
+### Code
+- Vaesea (PepperTux-Haxe stuff)
+- AnatolyStev (PepperTux-Haxe stuff)
+- Codename Engine (makeSolidGraphic function from cne-flixel, which was modified here to allow for unisolid objects. This will likely be removed soon)
+- SuperTux Team (some player variables are based on supertux's player variables, although they did not make any code for this project, obviously)
+- Discover HaxeFlixel (Book / PDF) (Despite some things being changed, the code is still based on Discover HaxeFlixel)
+### Art (Main Branch)
+- Vaesea
+### Art (STM1 Branch)
+- SuperTux Team (The art was made for SuperTux Milestone 1)
+### Music (Main Branch)
+- Vaesea (The drum samples were taken from a Sonic 4 Episode II soundfont, those drum samples were taken from Sonic The Hedgehog 1 and 2. Because of this, I'm not sure that the song can be CC-BY-SA 4.0. although I do allow everyone to use the song, you'll probably need to credit SEGA or Sonic Team)
+### Music (STM1 Branch)
+- Wansti (The SuperTux Theme used was made for SuperTux Milestone 1)
+- Mystical (Salcon)
+- Mortimer Twang (Chipdisko)
+## Special Thanks
+- Haxe (This project obviously uses Haxe)
+- HaxeFlixel (This project obviously uses HaxeFlixel)
+- SuperTux Team (The STM1 branch is a base for SuperTux fangames)
+
 ## Future Additions, Improvements And Fixes
 ### Beta 2
-- [ ] Credits Menu
+- [ ] Credits Menu (Will also contain the GPL 3 license text (because this project uses the GPL 3 license) and the MIT license text as HaxeFlixel uses the MIT license)
 - [ ] Replacement of Solid Object Layer with FlxTilemap's Tile Properties
 - [ ] Checkpoints
 - [ ] The warning that appears when entering the level
@@ -63,10 +85,10 @@ possible in the future when I add mobile controls.
 - [ ] Skidding
 
 ### Unconfirmed
-- Options Menu (Really, I think this would be bloat for a simple platformer base like this. Anyone using this would just add their own options menu anyways...)
+- Options Menu (Really, I think this would be bloat for a simple platformer base like this. Anyone using this project would just add their own options menu anyways...)
 - Using Echo Flixel (It's quite slow when you have too many dynamic bodies on screen at once)
-- Using FlxTilemapExt for state.map (Anyone using this would probably just do this themselves
-- HUD (Anyone using this would just add their own HUD anyways so this likely won't be added since it's just bloat for something simple like this...)
+- Using FlxTilemapExt for state.map (Anyone using this project would probably just do this themselves)
+- HUD (Anyone using this project would just add their own HUD anyways so this likely won't be added since it's just bloat for something simple like this...)
 
 ## What's The License?
 It's the GNU General Public License 3.0. Check the LICENSE file for
