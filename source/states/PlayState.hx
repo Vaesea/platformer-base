@@ -1,5 +1,6 @@
 package states;
 
+import collision.Collision;
 import characters.player.Player;
 import flixel.FlxG;
 import flixel.FlxSprite;
@@ -32,6 +33,8 @@ class PlayState extends FlxState
 	   to add enemies! :3 */
 	var entities:FlxGroup;
 
+	public var solids:FlxGroup;
+
 	// TODO: Allow for more checkpoints
 	public var checkpoint:FlxPoint;
 
@@ -42,6 +45,7 @@ class PlayState extends FlxState
 
 		// Add things part 2
 		entities = new FlxGroup();
+		solids = new FlxGroup();
 		player = new Player();
 		items = new FlxTypedGroup<FlxSprite>();
 
@@ -53,6 +57,7 @@ class PlayState extends FlxState
 
 		// Add things part 3
 		entities.add(items);
+		add(solids);
 		add(entities);
 		add(player);
 
@@ -67,12 +72,13 @@ class PlayState extends FlxState
 	override public function update(elapsed:Float)
 	{
 		updateCheckpoint();
+		super.update(elapsed);
+
+		Collision.resolve(player, solids);
 
 		// Tux collision
 		FlxG.overlap(entities, player, collideEntities);
 		FlxG.collide(map, player);
-
-		super.update(elapsed);
 	}
 
 	function collideEntities(entity:FlxSprite, player:Player)

@@ -59,7 +59,7 @@ class LevelLoader extends FlxState
         state.map.setTileProperties(12, NONE); // Decoration 6
 
         state.add(backgroundMap);
-        state.add(state.map);
+        state.solids.add(state.map);
 
         // Load goal
         for (object in getLevelObjects(tiledMap, "Level"))
