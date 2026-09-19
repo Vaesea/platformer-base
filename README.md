@@ -10,11 +10,6 @@ SuperTux mod, PepperTux, specifically the HaxeFlixel version.
 This will hopefully be a good base for any platformer game, which 
 is why it will have two branches.
 
-## Future Additions (Main Branch)
-### v1.0.1
-- Updated collision system made by AnatolyStev (originally made for a scrapped project named Milestone Mix)
-- New song that doesn't use copyrighted samples
-
 ## Branches
 Both branches will likely be unstable. For stable code, please go 
 to the releases.
@@ -68,7 +63,7 @@ possible in the future if I add mobile controls.
 ### Art (STM1 Branch)
 - SuperTux Team (The art that was made for SuperTux Milestone 1)
 ### Music (Main Branch)
-- Vaesea (The drum samples were taken from a Sonic 4 Episode II soundfont, those drum samples were taken from Sonic The Hedgehog 1 and 2. Because of this, I'm not sure that the song can be CC-BY-SA 4.0. although I do allow everyone to use the song, you'll probably need to credit SEGA or Sonic Team)
+- Vaesea (The song is licensed under CC-BY-SA 4.0)
 ### Music (STM1 Branch)
 - Wansti (The SuperTux Theme that was made for SuperTux Milestone 1)
 - Mystical (Salcon)
@@ -77,16 +72,6 @@ possible in the future if I add mobile controls.
 - Haxe (This project obviously uses Haxe)
 - HaxeFlixel (This project obviously uses HaxeFlixel)
 - SuperTux Team (The STM1 branch is a base for SuperTux fangames)
-
-## Future Additions, Improvements And Fixes
-### Full Release
-- [x] Ducking / Crouching
-
-### Unconfirmed
-- Options Menu (Really, I think this would be bloat for a simple platformer base like this. Anyone using this project would just add their own options menu anyways...)
-- Using Echo Flixel (It's quite slow when you have too many dynamic bodies on screen at once)
-- Using FlxTilemapExt for state.map (Anyone using this project would probably just do this themselves)
-- HUD (Anyone using this project would just add their own HUD anyways so this likely won't be added since it's just bloat for something simple like this...)
 
 ## What's The License?
 It's the GNU General Public License 3.0. Check the LICENSE file for
