@@ -10,6 +10,11 @@ SuperTux mod, PepperTux, specifically the HaxeFlixel version.
 This will hopefully be a good base for any platformer game, which 
 is why it will have two branches.
 
+## Future Additions (Main Branch)
+### v1.0.1
+- Updated collision system made by AnatolyStev (originally made for a scrapped project named Milestone Mix)
+- New song that doesn't use copyrighted samples
+
 ## Branches
 Both branches will likely be unstable. For stable code, please go 
 to the releases.
@@ -49,7 +54,7 @@ works. I recommend using a virtual machine for Windows or Linux,
 however, for Mac, I recommend asking someone to test the game for you.
 
 You can't compile this base for iOS / Android yet. This will likely be
-possible in the future when I add mobile controls.
+possible in the future if I add mobile controls.
 
 ## Credits
 ### Code
