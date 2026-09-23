@@ -1,5 +1,7 @@
 package;
 
+import collision.SlopeSolid;
+import collision.Solid;
 import flixel.FlxG;
 import flixel.FlxState;
 import flixel.addons.editors.tiled.TiledMap;
@@ -41,32 +43,31 @@ class LevelLoader extends FlxState
 
         state.map = new FlxTilemap();
         state.map.loadMapFromArray(interactiveLayer.tileArray, tiledMap.width, tiledMap.height, "assets/images/tiles.png", 16, 16, Global.PS.startingTile);
-
-        /* Add the tile ids here and what they should be.
-           I recommend adding comments to the tile property thing. */
-        state.map.setTileProperties(0, NONE); // Ignore this, it's always an empty tile!
-        state.map.setTileProperties(1, ANY); // Solid tile
-        state.map.setTileProperties(2, NONE); // Water (Deeper)
-        state.map.setTileProperties(3, NONE); // Water (Deep)
-        state.map.setTileProperties(4, NONE); // Water
-        state.map.setTileProperties(5, NONE); // Empty Tile
-        state.map.setTileProperties(6, NONE); // Decoration 1
-        state.map.setTileProperties(7, NONE); // Decoration 2
-        state.map.setTileProperties(8, NONE); // Empty Tile
-        state.map.setTileProperties(9, NONE); // Decoration 3
-        state.map.setTileProperties(10, NONE); // Decoration 4
-        state.map.setTileProperties(11, NONE); // Decoration 5
-        state.map.setTileProperties(12, NONE); // Decoration 6
+        state.map.solid = false;
 
         state.add(backgroundMap);
-        state.solids.add(state.map);
+        state.add(state.map);
+
+        // Load solids
+        for (object in getLevelObjects(tiledMap, "Solid"))
+        {
+            switch (object.type)
+            {
+                default:
+                    state.solids.add(new Solid(object.x, object.y, object.width, object.height));
+                case "slope_r":
+                    state.solids.add(new SlopeSolid(object.x, object.y, object.width, object.height, true));
+                case "slope_l":
+                    state.solids.add(new SlopeSolid(object.x, object.y, object.width, object.height, false));
+            }
+        }
 
         // Load goal
         for (object in getLevelObjects(tiledMap, "Level"))
         {
             switch (object.type)
             {
-                case "goal": // Will add a checkpoint at some point!
+                case "goal":
                     state.items.add(new Goal(object.x, object.y, object.width, object.height));
                 case "checkpoint":
                     state.checkpoint = new FlxPoint(object.x, object.y - 16);

@@ -42,7 +42,7 @@ class VPBSprite extends FlxSprite
 	 *                   it is used as a prefix to find a new unique name like `"Key3"`.
 	 * @return  This `VPBSprite` instance (nice for chaining stuff together, if you're into that).
 	 */
-    public function makeSolidGraphic(Width:Int, Height:Int, Color:FlxColor = FlxColor.TRANSPARENT, SolidSide:AllowedSides = ALL, Unique:Bool = false,?Key:String):FlxSprite
+    public function makeSolidGraphic(Width:Float, Height:Float, Color:FlxColor = FlxColor.TRANSPARENT, SolidSide:AllowedSides = ALL, Unique:Bool = false,?Key:String):FlxSprite
     {
         var graph:FlxGraphic = FlxG.bitmap.create(1, 1, Color, Unique, Key);
 
@@ -65,6 +65,7 @@ class VPBSprite extends FlxSprite
         }
         
         immovable = true;
+        moves = false;
         return this;
     }
 }

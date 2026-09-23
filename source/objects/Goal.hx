@@ -8,7 +8,7 @@ import states.PlayState;
 
 class Goal extends VPBSprite
 {
-    public function new(x:Float, y:Float, width:Int, height:Int)
+    public function new(x:Float, y:Float, width:Float, height:Float)
     {
         super(x, y);
         makeSolidGraphic(width, height, ALL);
