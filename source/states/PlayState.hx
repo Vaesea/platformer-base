@@ -74,11 +74,10 @@ class PlayState extends FlxState
 		updateCheckpoint();
 		super.update(elapsed);
 
-		Collision.resolve(player, solids);
+		Collision.resolve(player, solids, player.physics, elapsed);
 
 		// Tux collision
 		FlxG.overlap(entities, player, collideEntities);
-		FlxG.collide(map, player);
 	}
 
 	function collideEntities(entity:FlxSprite, player:Player)

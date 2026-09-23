@@ -1,0 +1,5 @@
+slope_r =left to right
+slope_l = right to left
+
+only gentle, normal, and steep slopes are supported! (26.5, 45, 63.5) other slope angles are unsupported. if in doubt, think "is that in supertux?!?!?!?"
+unsupported slope types may show and have collision, but they likely won't work!

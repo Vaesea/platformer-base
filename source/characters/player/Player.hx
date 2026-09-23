@@ -1,11 +1,15 @@
 package characters.player;
 
+import physics.Physics;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.util.FlxColor;
 
 class Player extends FlxSprite
 {
+    // Physics
+    public var physics:Physics;
+
     // Movement
     var playerAcceleration:Int = 2000;
     var deceleration:Int = 1000;
@@ -16,6 +20,7 @@ class Player extends FlxSprite
     var speed:Int = 0;
     var runSpeed:Int = 192;
     var decelerateOnJumpRelease:Float = 0.5;
+    var maxFallSpeed = 2000;
 
     // Ducking
     var ducking:Bool = false;
@@ -38,9 +43,13 @@ class Player extends FlxSprite
         animation.add("duck", [5], 8.0, false);
         animation.play("stand");
 
+        // Physics
+        physics = new Physics(gravity);
+
         // Add deceleration (drag) and gravity
-        drag.x = deceleration;
-        acceleration.y = gravity;
+        physics.dragX = deceleration;
+        physics.maxVelocityX = walkSpeed;
+        physics.maxVelocityY = maxFallSpeed;
 
         // Hitbox
         setSize(9, 26);
@@ -83,28 +92,34 @@ class Player extends FlxSprite
 
         FlxG.overlap(Global.PS.map, ceilingDetector);
 
+        // Extra safety!
+        velocity.set(0, 0);
+        acceleration.set(0, 0);
+        drag.set(0, 0);
+
         super.update(elapsed);
     }
 
+    // One frame late but that's ok!
     function animate()
     {
         if (!ducking)
         {
             // If the player is on the floor and staying where they are, stand.
-            if (velocity.x == 0 && isTouching(FLOOR))
+            if (physics.velocityX == 0 && physics.grounded)
             {
                 animation.play("stand");
             }
 
             // If the player is on the floor and moving, walk.
-            if (velocity.x != 0 && isTouching(FLOOR))
+            if (physics.velocityX != 0 && physics.grounded)
             {
                 animation.play("walk");
             }
 
             // If the player is not on the floor, jump.
             // TODO: Is velocity.y != 0 needed?
-            if (velocity.y != 0 && !isTouching(FLOOR))
+            if (physics.velocityY != 0 && physics.grounded)
             {
                 animation.play("jump");
             }
@@ -118,19 +133,17 @@ class Player extends FlxSprite
     function move()
     {
         // Speed is, by default, 0.
-        acceleration.x = 0;
+        physics.accelerationX = 0;
 
         // If CONTROL is being pressed, run, If not, then just walk
         if (FlxG.keys.pressed.CONTROL)
         {
-            speed = runSpeed;
+            physics.maxVelocityX = runSpeed;
         }
         else
         {
-            speed = walkSpeed;
+            physics.maxVelocityX = walkSpeed;
         }
-
-        maxVelocity.x = speed; // Limit the player's speed
 
         // If player presses left, move left. If player presses right, move right.
         var duck_on_floor = (ducking && isTouching(FLOOR));
@@ -141,35 +154,35 @@ class Player extends FlxSprite
             {
                 flipX = true; // Flip player
                 direction = -1; // Set direction
-                acceleration.x -= playerAcceleration; // Move
+                physics.accelerationX = -playerAcceleration;
             }
             else if (FlxG.keys.anyPressed([RIGHT, D]))
             {
                 flipX = false; // Unflip player
                 direction = 1; // Set direction
-                acceleration.x += playerAcceleration; // Move
+                physics.accelerationX = playerAcceleration;
             }
         }
 
         // If player is pressing jump keys and is on ground, jump.
         // If player is walking at the speed of runSpeed, jump higher than usual.
-        if (FlxG.keys.anyJustPressed([SPACE, UP, W]) && isTouching(FLOOR))
+        if (FlxG.keys.anyJustPressed([SPACE, UP, W]) && physics.grounded)
         {
-            if (velocity.x == runSpeed || velocity.x == -runSpeed) // Might replace this with Math.abs()
+            if (Math.abs(physics.velocityX) > walkSpeed)
             {
-                velocity.y = -maxJumpHeight;
+                physics.velocityY = -maxJumpHeight;
             }
             else
             {
-                velocity.y = -minJumpHeight;
+                physics.velocityY = -minJumpHeight;
             }
 
             FlxG.sound.play("assets/sounds/jump.ogg");
         }
 
-        if (velocity.y < 0 && FlxG.keys.anyJustReleased([SPACE, W, UP]))
+        if (physics.velocityY < 0 && FlxG.keys.anyJustReleased([SPACE, W, UP]))
         {
-            velocity.y -= velocity.y * decelerateOnJumpRelease;
+            physics.velocityY -= physics.velocityY * decelerateOnJumpRelease;
         }
 
         // Ducking and standing (I wish there was a better way to do this)
