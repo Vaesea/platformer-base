@@ -74,5 +74,5 @@ possible in the future if I add mobile controls.
 - SuperTux Team (The STM1 branch is a base for SuperTux fangames)
 
 ## What's The License?
-It's the GNU General Public License 3.0. Check the LICENSE file for
+It's the MIT license. Check the LICENSE file for
 more information.
