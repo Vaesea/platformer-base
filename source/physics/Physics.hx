@@ -21,6 +21,11 @@ class Physics
 
     public var grounded:Bool = false;
 
+    public var groundSlope:Float = 0.0;
+
+    // 0 = disabled, 1 = full
+    public var uphillSlopeSlowdown:Float = 1.0;
+
     public function new(?gravity:Float = 1000)
     {
         this.gravity = gravity;
@@ -33,8 +38,22 @@ class Physics
         accelerationX = 0;
         accelerationY = 0;
         grounded = false;
+        groundSlope = 0.0;
         gravityEnabled = true;
         gravityModifier = 1.0;
+    }
+
+    public inline function horizontalMovementMultiplier():Float
+    {
+        if (Math.abs(groundSlope) <= epsilon || Math.abs(velocityX) <= epsilon || groundSlope * velocityX >= -epsilon)
+        {
+            return 1.0;
+        }
+
+        final strength = Math.max(0.0, Math.min(1.0, uphillSlopeSlowdown));
+        final angleMultiplier = 1.0 / Math.sqrt(1.0 + groundSlope * groundSlope);
+
+        return 1.0 - (1.0 - angleMultiplier) * strength;
     }
 
     public function setVelocity(x:Float, y:Float)

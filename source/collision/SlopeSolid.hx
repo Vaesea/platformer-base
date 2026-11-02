@@ -30,6 +30,7 @@ class SlopeSolid extends FlxObject
         super(x, y, width, height);
 
         this.risesRight = risesRight;
+
         gradient = width > 0 ? height / width : 0;
         surfaceSlope = risesRight ? -gradient : gradient;
 
@@ -38,7 +39,7 @@ class SlopeSolid extends FlxObject
         immovable = true;
     }
 
-    public inline function lineYAt(worldX:Float)
+    public inline function lineYAt(worldX:Float):Float
     {
         final localX = worldX - x;
 
@@ -50,7 +51,7 @@ class SlopeSolid extends FlxObject
         return y + localX * gradient;
     }
 
-    public inline function surfaceYAt(worldX:Float)
+    public inline function surfaceYAt(worldX:Float):Float
     {
         var localX = worldX - x;
 
@@ -77,7 +78,7 @@ class SlopeSolid extends FlxObject
         }
 
         final sampleX = risesRight ? overlapRight : overlapLeft;
-
+        
         return lineYAt(sampleX);
     }
 
@@ -203,15 +204,21 @@ class SlopeSolid extends FlxObject
             bestFeature = 2;
         }
 
-        return {depth: bestDepth, normalX: bestNormalX, normalY: bestNormalY, feature: bestFeature};
+        return
+        {
+            depth: bestDepth,
+            normalX: bestNormalX,
+            normalY: bestNormalY,
+            feature: bestFeature
+        };
     }
 
-    public inline function overlapsBody(bodyX:Float, bodyY:Float, bodyWidth:Float, bodyHeight:Float)
+    public inline function overlapsBody(bodyX:Float, bodyY:Float, bodyWidth:Float, bodyHeight:Float):Bool
     {
         return collideAABB(bodyX, bodyY, bodyWidth, bodyHeight) != null;
     }
 
-    public inline function overlapsHorizontally(bodyX:Float, bodyWidth:Float)
+    public inline function overlapsHorizontally(bodyX:Float, bodyWidth:Float):Bool
     {
         return bodyX < x + width && bodyX + bodyWidth > x;
     }
@@ -228,7 +235,7 @@ class SlopeSolid extends FlxObject
         return surfaceY - bodyHeight - skin;
     }
 
-    public inline function snapBody(body:FlxObject, skin:Float)
+    public inline function snapBody(body:FlxObject, skin:Float):Bool
     {
         final nextY = getBodyY(body.x, body.width, body.height, skin);
 
@@ -242,7 +249,7 @@ class SlopeSolid extends FlxObject
         return true;
     }
 
-    public inline function isOnSurface(bodyX:Float, bodyY:Float, bodyWidth:Float, bodyHeight:Float, tolerance:Float)
+    public inline function isOnSurface(bodyX:Float, bodyY:Float, bodyWidth:Float, bodyHeight:Float, tolerance:Float):Bool
     {
         final surfaceY = surfaceYForBody(bodyX, bodyWidth);
 
@@ -280,7 +287,7 @@ class SlopeSolid extends FlxObject
         };
     }
 
-    static function shouldUseAxis(depth:Float, feature:Int, bestDepth:Float, bestFeature:Int)
+    static function shouldUseAxis(depth:Float, feature:Int, bestDepth:Float, bestFeature:Int):Bool
     {
         if (depth < bestDepth - 0.000001)
         {
@@ -305,7 +312,13 @@ class SlopeSolid extends FlxObject
 
         if (axisLength <= 0.000001)
         {
-            return{valid: false, depth: 0, normalX: 0, normalY: 0};
+            return
+            {
+                valid: false,
+                depth: 0,
+                normalX: 0,
+                normalY: 0
+            };
         }
 
         return testAxis(axisX / axisLength, axisY / axisLength, feature, bodyX, bodyY, bodyWidth, bodyHeight, vx0, vy0, vx1, vy1, vx2, vy2, rectCenterX, rectCenterY, triangleCenterX, triangleCenterY);
@@ -332,7 +345,13 @@ class SlopeSolid extends FlxObject
 
         if (depth <= 0.000001)
         {
-            return {valid: false, depth: 0, normalX: 0, normalY: 0};
+            return
+            {
+                valid: false,
+                depth: 0,
+                normalX: 0,
+                normalY: 0
+            };
         }
 
         var normalX = axisX;
@@ -347,10 +366,29 @@ class SlopeSolid extends FlxObject
             normalY = -normalY;
         }
 
-        return {valid: true, depth: depth, normalX: normalX, normalY: normalY};
+        return
+        {
+            valid: true,
+            depth: depth,
+            normalX: normalX,
+            normalY: normalY
+        };
     }
 
-    public inline function isEnteringFromLowSide(startX:Float, bodyWidth:Float, nextX:Float, tolerance:Float)
+    public static function fromTiledType(x:Float, y:Float, width:Float, height:Float, type:String)
+    {
+        return switch (type)
+        {
+            default:
+                null;
+            case "slope_r":
+                new SlopeSolid(x, y, width, height, true);
+            case "slope_l":
+                new SlopeSolid(x, y, width, height, false);
+        };
+    }
+
+    public inline function isEnteringFromLowSide(startX:Float, bodyWidth:Float, nextX:Float, tolerance:Float):Bool
     {
         final startRight = startX + bodyWidth;
         final nextRight = nextX + bodyWidth;

@@ -1,5 +1,6 @@
 package characters.player;
 
+import collision.Collision;
 import physics.Physics;
 import flixel.FlxG;
 import flixel.FlxSprite;
@@ -28,9 +29,6 @@ class Player extends FlxSprite
     // Direction
     public var direction:Int = 1;
 
-    // Extra Hitbox
-    public var ceilingDetector:FlxSprite; // Really bad way to implement this, I think!
-
     public function new()
     {
         super();
@@ -54,20 +52,10 @@ class Player extends FlxSprite
         // Hitbox
         setSize(9, 26);
         offset.set(4, 6);
-        
-        // Ceiling Detector
-        ceilingDetector = new FlxSprite(this.x, this.y - 6);
-        ceilingDetector.makeGraphic(Std.int(this.width), 5, FlxColor.TRANSPARENT);
-
-        // Add Ceiling Detector to PlayState to make it appear in the level
-        Global.PS.add(ceilingDetector);
     }
 
     override public function update(elapsed:Float)
     {
-        // Sync Ceiling Detector with player. This is a bad way to do it, as there's a delay, but who cares?
-        ceilingDetector.x = this.x;
-        ceilingDetector.y = this.y - 6;
 
         // Stop the player from falling off the map through the left
         if (x < 0)
@@ -89,8 +77,6 @@ class Player extends FlxSprite
         // Functions
         move();
         animate();
-
-        FlxG.overlap(Global.PS.map, ceilingDetector);
 
         // Extra safety!
         velocity.set(0, 0);
@@ -146,7 +132,7 @@ class Player extends FlxSprite
         }
 
         // If player presses left, move left. If player presses right, move right.
-        var duck_on_floor = (ducking && isTouching(FLOOR));
+        var duck_on_floor = (ducking && physics.grounded);
         
         if (!duck_on_floor)
         {
@@ -164,8 +150,8 @@ class Player extends FlxSprite
             }
         }
 
-        // If player is pressing jump keys and is on ground, jump.
-        // If player is walking at the speed of runSpeed, jump higher than usual.
+        // If player is pressing jump keys and is on ground, jump
+        // If player is walking at a speed above runSpeed, jump higher than usual
         if (FlxG.keys.anyJustPressed([SPACE, UP, W]) && physics.grounded)
         {
             if (Math.abs(physics.velocityX) > walkSpeed)
@@ -186,26 +172,13 @@ class Player extends FlxSprite
         }
 
         // Ducking and standing (I wish there was a better way to do this)
-        if (!ducking && isTouching(FLOOR) && FlxG.keys.anyPressed([DOWN, S]))
+        if (!ducking && physics.grounded && FlxG.keys.anyPressed([DOWN, S]))
         {
-            ducking = true;
-
-            var oldHeight = height;
-            setSize(12, 13);
-            offset.set(4, 19); // Things seem to be reversed here.
-            y += oldHeight - height;
+            setDucking(true);
         }
-        else if (ducking && isTouching(FLOOR) && !FlxG.keys.anyPressed([DOWN, S]))
+        else if (ducking && physics.grounded && !FlxG.keys.anyPressed([DOWN, S]))
         {
-            if (!ceilingDetector.overlaps(Global.PS.map))
-            {
-                ducking = false;
-
-                var oldHeight = height;
-                setSize(9, 26);
-                y -= height - oldHeight;
-                offset.set(4, 6);
-            }
+            setDucking(false);
         }
     }
 
@@ -213,5 +186,41 @@ class Player extends FlxSprite
     {
         Global.coins = 0;
         FlxG.resetState();
+    }
+
+    function setDucking(value:Bool):Bool
+    {
+        if (value == ducking)
+        {
+            return true;
+        }
+
+        if (value)
+        {
+            final oldHeight = height;
+
+            setSize(12, 13);
+            offset.set(4, 19);
+
+            y += oldHeight - height;
+            ducking = true;
+
+            return true;
+        }
+
+        final oldHeight = height;
+        final newHeight = 26;
+        final standY = y - (newHeight - oldHeight);
+
+        if (!Collision.canOccupy(this, Global.PS.solids, x, standY, 9, newHeight))
+        {
+            return false;
+        }
+
+        setSize(9, newHeight);
+        offset.set(4, 6);
+        y = standY;
+        ducking = false;
+        return true;
     }
 }

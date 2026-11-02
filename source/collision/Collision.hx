@@ -31,7 +31,7 @@ class Collision
     public static inline var max_step_pixels:Float = 1.0;
     public static inline var max_substeps:Int = 64;
 
-    public static function resolve(body:FlxObject, solids:FlxGroup, physics:Physics, elapsed:Float, ?onCollision:FlxObject->FlxObject->Void)
+    public static function resolve(body:FlxObject, solids:FlxGroup, physics:Physics, elapsed:Float, ?onCollision:FlxObject->FlxObject->Void):Bool
     {
         if (body == null || solids == null || physics == null || elapsed <= 0)
         {
@@ -46,6 +46,11 @@ class Collision
         body.touching = NONE;
 
         final wasGrounded = physics.grounded && physics.velocityY >= -move_epsilon;
+
+        if (!wasGrounded)
+        {
+            physics.groundSlope = 0.0;
+        }
 
         depenetrateRectangles(body, solids);
         depenetrateSlopes(body, solids);
@@ -62,9 +67,11 @@ class Collision
         if (physics.velocityY < -move_epsilon)
         {
             physics.grounded = false;
+            physics.groundSlope = 0.0;
         }
 
-        final totalDX = physics.velocityX * elapsed;
+        final initialHorizontalMultiplier = wasGrounded ? physics.horizontalMovementMultiplier() : 1.0;
+        final totalDX = physics.velocityX * elapsed * initialHorizontalMultiplier;
         final totalDY = physics.velocityY * elapsed;
 
         final largestDistance = Math.max(Math.abs(totalDX), Math.abs(totalDY));
@@ -89,10 +96,13 @@ class Collision
             final oldX = body.x;
             final oldY = body.y;
 
-            final stepDX = physics.velocityX * stepTime;
             final stepDY = physics.velocityY * stepTime;
 
             final supportedBeforeHorizontal = physics.grounded || (wasGrounded && physics.velocityY >= -move_epsilon);
+
+            final horizontalMultiplier = supportedBeforeHorizontal && physics.velocityY >= -move_epsilon ? physics.horizontalMovementMultiplier() : 1.0;
+
+            final stepDX = physics.velocityX * stepTime * horizontalMultiplier;
 
             if (Math.abs(stepDX) > move_epsilon)
             {
@@ -131,6 +141,11 @@ class Collision
             }
         }
 
+        if (!physics.grounded)
+        {
+            physics.groundSlope = 0.0;
+        }
+
         body.velocity.x = physics.velocityX;
         body.velocity.y = physics.velocityY;
 
@@ -162,7 +177,182 @@ class Collision
         }
     }
 
-    static function resolveHorizontalRectangles(body:FlxObject, solids:FlxGroup, oldX:Float, oldY:Float, moveX:Float, physics:Physics, ?onCollision:FlxObject->FlxObject->Void)
+    public static function canOccupy(body:FlxObject, solids:FlxGroup, x:Float, y:Float, width:Float, height:Float):Bool
+    {
+        if (body == null || solids == null || width <= 0 || height <= 0)
+        {
+            return false;
+        }
+
+        var testX = x;
+        var testY = y;
+        var testWidth = width;
+        var testHeight = height;
+
+        final targetBottom = y + height;
+        final currentBottom = body.y + body.height;
+
+        final sameHorizontalBounds = Math.abs(x - body.x) <= skin && Math.abs(width - body.width) <= skin;
+        final sameFeet = Math.abs(targetBottom - currentBottom)  <= Math.max(skin * 2, slope_ground_tolerance);
+
+        final growsUpward = y < body.y - move_epsilon;
+
+        if (sameHorizontalBounds && sameFeet && growsUpward)
+        {
+            testHeight = body.y - y;
+
+            if (testHeight <= move_epsilon)
+            {
+                return true;
+            }
+        }
+
+        final right = testX + testWidth;
+        final bottom = testY + testHeight;
+
+        for (member in solids.members)
+        {
+            if (member == null || !member.exists || !member.alive)
+            {
+                continue;
+            }
+
+            if (!Std.isOfType(member, FlxObject))
+            {
+                continue;
+            }
+
+            final solidObject:FlxObject = cast member;
+
+            if (solidObject == body || !solidObject.active || !solidObject.solid)
+            {
+                continue;
+            }
+
+            if (Std.isOfType(solidObject, SlopeSolid))
+            {
+                final slope:SlopeSolid = cast solidObject;
+
+                if (slope.width <= 0 || slope.height <= 0)
+                {
+                    continue;
+                }
+
+                if (slope.collideAABB(testX, testY, testWidth, testHeight) != null)
+                {
+                    return false;
+                }
+
+                continue;
+            }
+
+            final solid:FlxObject = solidObject;
+
+            if (solid.width <= 0 || solid.height <= 0)
+            {
+                continue;
+            }
+
+            final solidRight = solid.x + solid.width;
+            final solidBottom = solid.y + solid.height;
+
+            if (right > solid.x + skin && testX < solidRight - skin && bottom > solid.y + skin && testY < solidBottom - skin)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    static function isSlopeTopTransition(body:FlxObject, solids:FlxGroup, solid:FlxObject, referenceX:Float, referenceY:Float, moveX:Float, physics:Physics):Bool
+    {
+        if (!physics.grounded || Math.abs(moveX) <= move_epsilon)
+        {
+            return false;
+        }
+
+        final feetY = referenceY + body.height;
+        final tolerance = slope_ground_tolerance + skin;
+        final slopeEpsilon = 0.5;
+
+        for (member in solids.members)
+        {
+            if (member == null || !member.exists || !member.alive)
+            {
+                continue;
+            }
+
+            if (!Std.isOfType(member, SlopeSolid))
+            {
+                continue;
+            }
+
+            final slope:SlopeSolid = cast member;
+
+            if (!slope.active || !slope.solid || slope.width <= 0 || slope.height <= 0)
+            {
+                continue;
+            }
+
+            if (!canCollide(body.allowCollisions, slope.allowCollisions, 0, -1))
+            {
+                continue;
+            }
+
+            final currentSurface = slope.surfaceYForBody(referenceX, body.width);
+
+            if (currentSurface == null || Math.abs(feetY - currentSurface) > tolerance)
+            {
+                continue;
+            }
+
+            final movesTowardHighEnd = slope.risesRight ? moveX > move_epsilon : moveX < -move_epsilon;
+
+            if (!movesTowardHighEnd)
+            {
+                continue;
+            }
+
+            final highX = slope.risesRight ? slope.x + slope.width : slope.x;
+            final highY = slope.y;
+
+            if (Math.abs(solid.y - highY) > slopeEpsilon)
+            {
+                continue;
+            }
+
+            final sameEndpoint = slope.risesRight ? Math.abs(solid.x - highX) <= slopeEpsilon : Math.abs((solid.x + solid.width) - highX) <= slopeEpsilon;
+
+            if (!sameEndpoint)
+            {
+                continue;
+            }
+
+            if (!slope.overlapsHorizontally(referenceX, body.width))
+            {
+                continue;
+            }
+
+            if (slope.risesRight)
+            {
+                if (referenceX >= highX + tolerance)
+                {
+                    continue;
+                }
+            }
+            else if (referenceX + body.width <= highX - tolerance)
+            {
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    static function resolveHorizontalRectangles(body:FlxObject, solids:FlxGroup, oldX:Float, oldY:Float, moveX:Float, physics:Physics, ?onCollision:FlxObject->FlxObject->Void):Bool
     {
         final movingRight = moveX > move_epsilon;
         final movingLeft = moveX < -move_epsilon;
@@ -207,7 +397,7 @@ class Collision
 
             final solidRight = solid.x + solid.width;
 
-            if (movingRight && oldRight <= solid.x + time_epsilon && newRight > solid.x - skin && canCollide(body.allowCollisions, solid.allowCollisions, -1, 0))
+            if (movingRight && oldRight <= solid.x + time_epsilon && newRight > solid.x - skin && canCollide(body.allowCollisions, solid.allowCollisions, -1, 0) && !isSlopeTopTransition(body, solids, solid, oldX, oldY, moveX, physics))
             {
                 final candidateX = solid.x - body.width - skin;
                 final distance = Math.abs(candidateX - body.x);
@@ -221,7 +411,7 @@ class Collision
                     bestNormalX = -1;
                 }
             }
-            else if (movingLeft && oldX >= solidRight - time_epsilon && body.x < solidRight + skin && canCollide(body.allowCollisions, solid.allowCollisions, 1, 0))
+            else if (movingLeft && oldX >= solidRight - time_epsilon && body.x < solidRight + skin && canCollide(body.allowCollisions, solid.allowCollisions, 1, 0) && !isSlopeTopTransition(body, solids, solid, oldX, oldY, moveX, physics))
             {
                 final candidateX = solidRight + skin;
                 final distance = Math.abs(candidateX - body.x);
@@ -263,7 +453,7 @@ class Collision
         return true;
     }
 
-    static function resolveVerticalRectangles(body:FlxObject, solids:FlxGroup, oldX:Float, oldY:Float, moveY:Float, physics:Physics, ?onCollision:FlxObject->FlxObject->Void)
+    static function resolveVerticalRectangles(body:FlxObject, solids:FlxGroup, oldX:Float, oldY:Float, moveY:Float, physics:Physics, ?onCollision:FlxObject->FlxObject->Void):Bool
     {
         final movingUp = moveY < -move_epsilon;
         final movingDown = moveY > move_epsilon;
@@ -281,7 +471,7 @@ class Collision
         return false;
     }
 
-    static function resolveVerticalFloorRectangles(body:FlxObject, solids:FlxGroup, oldX:Float, oldY:Float, physics:Physics, ?onCollision:FlxObject->FlxObject->Void)
+    static function resolveVerticalFloorRectangles(body:FlxObject, solids:FlxGroup, oldX:Float, oldY:Float, physics:Physics, ?onCollision:FlxObject->FlxObject->Void):Bool
     {
         final oldBottom = oldY + body.height;
         final newBottom = body.y + body.height;
@@ -344,6 +534,7 @@ class Collision
         body.touching |= DOWN;
         physics.velocityY = 0;
         physics.grounded = true;
+        physics.groundSlope = 0.0;
 
         if (onCollision != null && bestOther != null)
         {
@@ -353,7 +544,7 @@ class Collision
         return true;
     }
 
-    static function resolveVerticalCeilingRectangles(body:FlxObject, solids:FlxGroup, oldX:Float, oldY:Float, physics:Physics, ?onCollision:FlxObject->FlxObject->Void)
+    static function resolveVerticalCeilingRectangles(body:FlxObject, solids:FlxGroup, oldX:Float, oldY:Float, physics:Physics, ?onCollision:FlxObject->FlxObject->Void):Bool
     {
         final oldTop = oldY;
         final newTop = body.y;
@@ -427,7 +618,7 @@ class Collision
         return true;
     }
 
-    static function resolveSlopeContacts(body:FlxObject, solids:FlxGroup, oldX:Float, oldY:Float, endX:Float, endY:Float, moveX:Float, moveY:Float, physics:Physics, ?onCollision:FlxObject->FlxObject->Void)
+    static function resolveSlopeContacts(body:FlxObject, solids:FlxGroup, oldX:Float, oldY:Float, endX:Float, endY:Float, moveX:Float, moveY:Float, physics:Physics, ?onCollision:FlxObject->FlxObject->Void):Bool
     {
         var anyResolved = false;
 
@@ -461,9 +652,6 @@ class Collision
                     continue;
                 }
 
-                final absNormalX = Math.abs(hit.normalX);
-                final absNormalY = Math.abs(hit.normalY);
-
                 if (hit.feature == 0 && hit.normalY < -move_epsilon)
                 {
                     if (!canCollide(body.allowCollisions, slope.allowCollisions, 0, -1))
@@ -485,6 +673,7 @@ class Collision
                     body.touching |= DOWN;
                     physics.velocityY = 0;
                     physics.grounded = true;
+                    physics.groundSlope = slope.surfaceSlope;
                     resolvedThisPass = true;
                     anyResolved = true;
 
@@ -522,6 +711,7 @@ class Collision
                     }
 
                     physics.grounded = false;
+                    physics.groundSlope = 0.0;
                     resolvedThisPass = true;
                     anyResolved = true;
 
@@ -580,6 +770,7 @@ class Collision
                         body.touching |= DOWN;
                         physics.velocityY = 0;
                         physics.grounded = true;
+                        physics.groundSlope = 0.0;
                     }
                     else
                     {
@@ -591,6 +782,7 @@ class Collision
                         }
 
                         physics.grounded = false;
+                        physics.groundSlope = 0.0;
                     }
 
                     resolvedThisPass = true;
@@ -612,7 +804,7 @@ class Collision
         return anyResolved;
     }
 
-    static function followGroundAfterHorizontalMove(body:FlxObject, solids:FlxGroup, referenceX:Float, referenceY:Float, moveX:Float, physics:Physics, ?onCollision:FlxObject->FlxObject->Void)
+    static function followGroundAfterHorizontalMove(body:FlxObject, solids:FlxGroup, referenceX:Float, referenceY:Float, moveX:Float, physics:Physics, ?onCollision:FlxObject->FlxObject->Void):Bool
     {
         if (physics.velocityY < -move_epsilon)
         {
@@ -651,6 +843,11 @@ class Collision
             }
 
             if (!canCollide(body.allowCollisions, solid.allowCollisions, 0, -1))
+            {
+                continue;
+            }
+
+            if (referenceBottom > solid.y + move_epsilon)
             {
                 continue;
             }
@@ -701,22 +898,38 @@ class Collision
             }
 
             final referenceSurface = slope.surfaceYForBody(referenceX, body.width);
-            final referenceDistance = referenceSurface == null ? Math.abs(referenceBottom - nextSurface) : Math.abs(referenceBottom - referenceSurface);
 
-            if (referenceDistance > supportEpsilon)
+            final bodySpanHeight = body.width * slope.gradient;
+            final movementHeight = Math.abs(moveX) * slope.gradient;
+            final maximumAcquisitionHeight = bodySpanHeight + movementHeight + supportEpsilon;
+
+            if (referenceSurface != null)
             {
-                continue;
+                final previousSurfaceOffset = Math.abs(referenceBottom - referenceSurface);
+
+                if (previousSurfaceOffset > bodySpanHeight + supportEpsilon)
+                {
+                    continue;
+                }
+
+                final surfaceTravel = Math.abs(nextSurface - referenceSurface);
+
+                if (surfaceTravel > movementHeight + supportEpsilon)
+                {
+                    continue;
+                }
             }
-
-            final surfaceChange = Math.abs(nextSurface - referenceBottom);
-            final maximumSurfaceChange = Math.abs(moveX) * slope.gradient + supportEpsilon;
-
-            if (surfaceChange > maximumSurfaceChange)
+            else if (Math.abs(nextSurface - referenceBottom) > maximumAcquisitionHeight)
             {
                 continue;
             }
 
             final distance = Math.abs(nextSurface - referenceBottom);
+
+            if (distance > maximumAcquisitionHeight)
+            {
+                continue;
+            }
 
             if (distance < bestSlopeDistance)
             {
@@ -731,12 +944,13 @@ class Collision
             return false;
         }
 
-        if (bestFlat != null  && (bestSlope == null || bestFlatDistance <= bestSlopeDistance))
+        if (bestFlat != null && (bestSlope == null || bestFlatDistance <= bestSlopeDistance))
         {
             body.y = bestFlatY - body.height - skin;
             body.touching |= DOWN;
             physics.velocityY = 0;
             physics.grounded = true;
+            physics.groundSlope = 0.0;
 
             if (onCollision != null)
             {
@@ -746,10 +960,23 @@ class Collision
             return true;
         }
 
+        final slopeBlocker = constrainUphillSlopeMovement(body, solids, referenceX, referenceY, body.x, bestSlope, physics);
+
+        if (slopeBlocker != null)
+        {
+            if (onCollision != null)
+            {
+                onCollision(body, slopeBlocker);
+            }
+
+            return true;
+        }
+
         body.y = bestSurface - body.height - skin;
         body.touching |= DOWN;
         physics.velocityY = 0;
         physics.grounded = true;
+        physics.groundSlope = bestSlope.surfaceSlope;
 
         if (onCollision != null)
         {
@@ -759,7 +986,134 @@ class Collision
         return true;
     }
 
-    static function maintainGround(body:FlxObject, solids:FlxGroup, referenceX:Float, referenceY:Float, moveX:Float, physics:Physics, ?onCollision:FlxObject->FlxObject->Void)
+    static function constrainUphillSlopeMovement(body:FlxObject, solids:FlxGroup, startX:Float, startY:Float, endX:Float, slope:SlopeSolid, physics:Physics):Null<FlxObject>
+    {
+        if (slope == null || Math.abs(endX - startX) <= move_epsilon)
+        {
+            return null;
+        }
+
+        final endSurface = slope.surfaceYForBody(endX, body.width);
+
+        if (endSurface == null)
+        {
+            return null;
+        }
+
+        final endBodyY = endSurface - body.height - skin;
+
+        if (endBodyY >= startY - move_epsilon)
+        {
+            return null;
+        }
+
+        final blockingAtEnd = blockingRectangleAt(body, solids, endX, endBodyY);
+
+        if (blockingAtEnd == null)
+        {
+            return null;
+        }
+
+        if (blockingRectangleAt(body, solids, startX, startY) != null)
+        {
+            return null;
+        }
+
+        var lo = 0.0;
+        var hi = 1.0;
+
+        for (_ in 0...18)
+        {
+            final mid = (lo + hi) * 0.5;
+
+            final testX = startX + (endX - startX) * mid;
+            final testSurface = slope.surfaceYForBody(testX, body.width);
+
+            if (testSurface == null)
+            {
+                lo = mid;
+                continue;
+            }
+
+            final testY = testSurface - body.height - skin;
+
+            if (blockingRectangleAt(body, solids, testX, testY) != null)
+            {
+                hi = mid;
+            }
+            else
+            {
+                lo = mid;
+            }
+        }
+
+        final safeT = Math.max(0.0, lo - 0.0001);
+        final safeX = startX + (endX - startX) * safeT;
+        final safeSurface = slope.surfaceYForBody(safeX, body.width);
+
+        if (safeSurface == null)
+        {
+            return null;
+        }
+
+        body.x = safeX;
+        body.y = safeSurface - body.height - skin;
+        physics.velocityX = 0;
+        physics.velocityY = 0;
+        physics.grounded = true;
+        physics.groundSlope = slope.surfaceSlope;
+        body.touching |= DOWN;
+
+        return blockingAtEnd;
+    }
+
+    static function blockingRectangleAt(body:FlxObject, solids:FlxGroup, x:Float, y:Float):Null<FlxObject>
+    {
+        final right = x + body.width;
+        final bottom = y + body.height;
+
+        for (member in solids.members)
+        {
+            if (member == null || !member.exists || !member.alive || member == body)
+            {
+                continue;
+            }
+
+            if (Std.isOfType(member, SlopeSolid))
+            {
+                continue;
+            }
+
+            if (!Std.isOfType(member, FlxObject))
+            {
+                continue;
+            }
+
+            final solid:FlxObject = cast member;
+
+            if (!solid.active || !solid.solid || solid.width <= 0 || solid.height <= 0)
+            {
+                continue;
+            }
+
+            if (!canCollide(body.allowCollisions, solid.allowCollisions, 0, 1))
+            {
+                continue;
+            }
+
+            final solidRight = solid.x + solid.width;
+            final solidBottom = solid.y + solid.height;
+
+            if (right > solid.x && x < solidRight && bottom > solid.y && y < solidBottom)
+            {
+                return solid;
+            }
+        }
+
+        return null;
+    }
+
+    static function maintainGround(body:FlxObject, solids:FlxGroup, referenceX:Float, referenceY:Float, moveX:Float, physics:Physics, ?onCollision:FlxObject->FlxObject->Void):Bool
     {
         if (physics.velocityY < -move_epsilon)
         {
@@ -795,12 +1149,20 @@ class Collision
                 continue;
             }
 
-            if (Math.abs(body.y + body.height - solid.y) <= slope_ground_tolerance)
+            final bodyBottom = body.y + body.height;
+
+            if (bodyBottom > solid.y + move_epsilon)
+            {
+                continue;
+            }
+
+            if (Math.abs(bodyBottom - solid.y) <= slope_ground_tolerance)
             {
                 body.y = solid.y - body.height - skin;
                 body.touching |= DOWN;
                 physics.velocityY = 0;
                 physics.grounded = true;
+                physics.groundSlope = 0.0;
 
                 if (onCollision != null)
                 {
@@ -867,6 +1229,7 @@ class Collision
             body.touching |= DOWN;
             physics.velocityY = 0;
             physics.grounded = true;
+            physics.groundSlope = slope.surfaceSlope;
 
             if (onCollision != null)
             {
@@ -936,7 +1299,7 @@ class Collision
 
                 if (hit.feature == 0 && hit.normalY > move_epsilon)
                 {
-                    if (!canCollide(body.allowCollisions, slope.allowCollisions, 0, 1))
+                    if (!canCollide(body.allowCollisions, slope.allowCollisions, 0, 1 ))
                     {
                         continue;
                     }
@@ -1012,7 +1375,12 @@ class Collision
     {
         for (_ in 0...4)
         {
-            var penetration:PenetrationHit = {depth: Math.POSITIVE_INFINITY, normalX: 0, normalY: 0};
+            var penetration:PenetrationHit =
+            {
+                depth: Math.POSITIVE_INFINITY,
+                normalX: 0,
+                normalY: 0
+            };
 
             for (member in solids.members)
             {
@@ -1034,6 +1402,11 @@ class Collision
                 final solid:FlxObject = cast member;
 
                 if (!solid.active || !solid.solid || solid.width <= 0 || solid.height <= 0)
+                {
+                    continue;
+                }
+
+                if (!isFullySolid(solid.allowCollisions))
                 {
                     continue;
                 }
@@ -1122,7 +1495,12 @@ class Collision
         }
     }
 
-    static function canCollide(bodyFlags:FlxDirectionFlags, solidFlags:FlxDirectionFlags, normalX:Int, normalY:Int)
+    static inline function isFullySolid(flags:FlxDirectionFlags):Bool
+    {
+        return flags.has(LEFT) && flags.has(RIGHT) && flags.has(UP) && flags.has(DOWN);
+    }
+
+    static function canCollide(bodyFlags:FlxDirectionFlags, solidFlags:FlxDirectionFlags, normalX:Int, normalY:Int):Bool
     {
         if (normalX < 0)
         {
